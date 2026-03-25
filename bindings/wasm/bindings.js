@@ -230,18 +230,22 @@ Module.setup = function() {
     return out;
   };
 
-  Module.Manifold.prototype.warpBatch = function(func) {
-    const wasmFuncPtr = addFunction(function(ptr, count) {
-      const verts = new Float64Array(Module.HEAPF64.buffer, ptr, count * 3);
+  Module.Manifold.prototype.warpBatch = function (func) {
+    const wasmFuncPtr = addFunction(function (ptr, count) {
+      const heapF64 = Module.HEAPF64 ?? HEAPF64;
+      if (!heapF64) {
+        throw new Error("WASM heap is not initialized (HEAPF64 unavailable)");
+      }
+      const verts = new Float64Array(heapF64.buffer, ptr, count * 3);
 
       func(verts, count);
-    }, 'vii');
+    }, "vii");
 
     const out = this._WarpBatch(wasmFuncPtr);
     removeFunction(wasmFuncPtr);
 
     const status = out.status();
-    if (status !== 'NoError') {
+    if (status !== "NoError") {
       throw new Module.ManifoldError(status);
     }
     return out;
